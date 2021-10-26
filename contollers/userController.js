@@ -64,7 +64,7 @@ async function updateUser(req, res, id) {
       };
       const updUser = User.update(id, userData);
       res.writeHead(200, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ updUser }));
+      return res.end(JSON.stringify(updUser));
     }
   } catch (error) {
     console.log(error);

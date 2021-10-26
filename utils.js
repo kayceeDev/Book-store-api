@@ -1,4 +1,5 @@
 const fs = require("fs");
+const books = require('./data/books.json')
 
 function writeDataToFile(filename, content) {
   fs.writeFileSync(filename, JSON.stringify(content), "utf8", (err) => {
@@ -26,7 +27,12 @@ function getPostData(req) {
   });
 }
 
+function isAvailable(id){
+books.map(b=>b.id === id && b.qunatity_available > 0)
+}
+
 module.exports = {
   writeDataToFile,
   getPostData,
+  isAvailable
 };

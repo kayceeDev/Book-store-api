@@ -3,6 +3,7 @@ const { v4: uuidV4 } = require("uuid");
 let users = require("../data/users.json");
 
 const { writeDataToFile } = require("../utils");
+const { resolve } = require("path/posix");
 
 function findAll() {
   return new Promise((resolve, reject) => {
@@ -41,6 +42,15 @@ function remove(id) {
     resolve();
   });
 }
+
+// function borrow(id){
+//   return new Promise((resolve, reject)=>{
+//     user = user.map
+//     users.borr
+//   })
+// }
+
+
 
 
 module.exports = {
