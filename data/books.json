@@ -1,0 +1,23 @@
+[
+    {
+      "id": "1",
+      "title": "The book of sorrows",
+      "description": "Ths book will make you cry just like learning node",
+      "author":"Jemmy mark",
+      "qunatity_available": 3
+    },
+    {
+      "id": "2",
+      "title": "Don't mess things up",
+      "description": "Avoid strikes from jerry and attend SOTU",
+      "author":"Leonard onye nku",
+      "qunatity_available": 5
+    },
+    {
+      "id": "3",
+      "title": "Oga nla",
+      "description": "I dey hail who dey mark this task. respect",
+      "author":"mpanyi saucecode",
+      "qunatity_available": 4
+    }
+  ]
