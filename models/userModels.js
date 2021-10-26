@@ -23,7 +23,7 @@ function createUser(user) {
   });
 }
 
-function updateUser(id, user) {
+function update(id, user) {
   return new Promise((resolve, reject) => {
     const index = users.findIndex((u) => u.id === id);
     users[index] = { id, ...user };
@@ -44,6 +44,6 @@ module.exports = {
   findAllUsers,
   findUserById,
   createUser,
-  updateUser,
+  update,
   removeUser
 };

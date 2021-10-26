@@ -110,7 +110,13 @@ async function deleteBook(req, res, bookId, userId) {
       res.end(
         JSON.stringify({ message: "User not found, create a new user first" })
       );
-    } else {
+    }else if (!book){
+        res.writeHead(404, { "Content-Type": "application.json" });
+        res.end(
+          JSON.stringify({ message: "book not found" })
+        );
+    } 
+    else {
       await Book.remove(bookId);
       res.writeHead(200, { "Content-type": "application/json" });
       res.end(JSON.stringify({ message: `Book ${bookId} removed` }));
