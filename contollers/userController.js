@@ -1,13 +1,12 @@
 const User = require("../models/userModels");
-let users = require("../data/users.json");
 
 const { getPostData } = require("../utils");
 
 async function getUsers(req, res) {
   try {
-    const users = User.findAllUsers();
+    const users = await User.findAllUsers();
     res.writeHead(200, { "Content-Type": "application.json" });
-    res.end(JSON.stringify(users));
+    return res.end(JSON.stringify(users));
   } catch (error) {
     console.log("error");
   }
@@ -62,7 +61,7 @@ async function updateUser(req, res, id) {
         username: username || user.username,
         bookBorrowed: bookBorrowed || user.bookBorrowed,
       };
-      const updUser = User.update(id, userData);
+      const updUser = await User.update(id, userData);
       res.writeHead(200, { "Content-Type": "application/json" });
       return res.end(JSON.stringify(updUser));
     }
@@ -82,7 +81,7 @@ async function deleteUser(req, res, id) {
     } else {
       await User.removeUser(id);
       res.writeHead(200, { "Content-type": "application/json" });
-      res.end(JSON.stringify({ message: `User ${bookId} removed` }));
+      res.end(JSON.stringify({ message: `User ${id} removed` }));
     }
   } catch (error) {
     console.log(error);

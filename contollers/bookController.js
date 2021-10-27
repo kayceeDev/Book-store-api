@@ -2,7 +2,7 @@ const Book = require("../models/bookModels");
 const User = require("../models/userModels");
 let availableBooks = require("../data/books.json");
 
-const { getPostData, isAvailable, isAvailable } = require("../utils");
+const { getPostData, isAvailable, isAdded } = require("../utils");
 
 async function getBooks(req, res) {
   try {
@@ -32,7 +32,6 @@ async function getBook(req, res, id) {
 async function addBookToStore(req, res, userId) {
   try {
     const user = await User.findUserById(userId);
-
     if (!user) {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ message: "User not found, Create new user" }));
@@ -40,30 +39,36 @@ async function addBookToStore(req, res, userId) {
       const body = await getPostData(req);
       const { title, author, description, quantity_available } =
         JSON.parse(body);
-      availableBooks.map((book) => {
-        if (book.title === title) {
-          const id = book.id;
-          const book = {
-            title,
-            author,
-            description: description,
-            quantity_available: book.quantity_available + quantity_available,
-          };
-          const updBook = await Book.update(id, book);
-          res.writeHead(200, { "Content-Type": "application/json" });
-          return res.end(JSON.stringify(updBook));
-        } else {
-          const book = {
-            title,
-            author,
-            description,
-            quantity_available,
-          };
-          const newBook = await Book.create(book);
-          res.writeHead(201, { "Content-Type": "application/json" });
-          return res.end(JSON.stringify(newBook));
-        }
-      });
+      const titleExist = isAdded(title);
+      console.log(titleExist);
+      if (titleExist) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ message: "Book already in store" }));
+      } else {
+        //  availableBooks.map((b) => {
+        //   if (b.title === title) {
+        //     const id = b.id;
+        //     const book = {
+        //       title: b.title,
+        //       author: b.author,
+        //       description: b.description,
+        //       quantity_available: b.quantity_available + quantity_available,
+        //     };
+        //     const updBook = Book.update(id, book);
+        //     res.writeHead(200, { "Content-Type": "application/json" });
+        //     return res.end(JSON.stringify(updBook));
+        //   }
+        // });
+        const book = {
+          title: title.trim().replace(/\s\s+/g, " "),
+          author: author.trim().replace(/\s\s+/g, " "),
+          description: description.trim().replace(/\s\s+/g, " "),
+          quantity_available,
+        };
+        const newBook = await Book.create(book);
+        res.writeHead(201, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify(newBook));
+      }
     }
   } catch (error) {
     console.log(error);
@@ -75,20 +80,23 @@ async function borrowBook(req, res, bookId, userId) {
   try {
     const user = await User.findUserById(userId);
     const book = await Book.findById(bookId);
-    const bookIsAvailable = await isAvailable(bookId);
+    const bookIsAvailable = isAvailable(bookId);
     if (!user) {
       res.writeHead(404, { "Content-Type": "application.json" });
       res.end(
         JSON.stringify({ message: "User not found, create a new user first" })
       );
-    } else if (!book) {
+    }
+    if (!book) {
       res.writeHead(404, { "Content-Type": "application.json" });
       res.end(JSON.stringify({ message: "book not found" }));
-    } else if (!bookIsAvailable) {
+    }
+    if (!bookIsAvailable) {
       res.writeHead(404, { "Content-Type": "application.json" });
       res.end(JSON.stringify({ message: "book out of stock" }));
     } else {
       const { title, author, description, quantity_available } = book;
+      const { username, bookBorrowed } = user
 
       const bookData = {
         title: title || book.title,
@@ -96,17 +104,29 @@ async function borrowBook(req, res, bookId, userId) {
         description: description || book.description,
         quantity_available: quantity_available - 1,
       };
-      user.bookBorrowed.map((t) => {
-        if (t.title === title) {
-          t.count++;
-        } else {
-          user.bookBorrowed.push({ title, count: 1 });
-        }
-      });
-      const updUser = await users.update(userId, user);
-      const updBook = await Book.update(bookId, bookData);
-      res.writeHead(200, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify(updBook, updUser));
+
+      console.log(title);
+
+      if (bookBorrowed.includes(title)) {
+        res.writeHead(404, { "Content-Type": "application.json" });
+        res.end(
+          JSON.stringify({
+            message: `User ${userId} already borrowed this book`,
+          })
+        );
+      }else{
+
+        userData = {
+          username: username || user.username,
+          bookBorrowed: [...bookBorrowed, title],
+        };
+
+        const updUser = await User.update(userId, userData);
+        const updBook = await Book.update(bookId, bookData);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify(updUser,updBook));
+      }
+
     }
   } catch (error) {
     console.log(error);
@@ -116,20 +136,23 @@ async function returnBook(req, res, bookId, userId) {
   try {
     const user = await User.findUserById(userId);
     const book = await Book.findById(bookId);
-    const bookIsAvailable = await isAvailable(bookId);
+    const bookIsAvailable = isAvailable(bookId);
     if (!user) {
       res.writeHead(404, { "Content-Type": "application.json" });
       res.end(
         JSON.stringify({ message: "User not found, create a new user first" })
       );
-    } else if (!book) {
+    } 
+    if (!book) {
       res.writeHead(404, { "Content-Type": "application.json" });
       res.end(JSON.stringify({ message: "book not found" }));
-    } else if (!bookIsAvailable) {
+    } 
+    if (!user.bookBorrowed.includes(book.title)) {
       res.writeHead(404, { "Content-Type": "application.json" });
-      res.end(JSON.stringify({ message: "book out of stock" }));
+      res.end(JSON.stringify({ message: "You haven't borrowed this book" }));
     } else {
       const { title, author, description, quantity_available } = book;
+      const {username, bookBorrowed} = user
 
       const bookData = {
         title: title || book.title,
@@ -138,16 +161,11 @@ async function returnBook(req, res, bookId, userId) {
         quantity_available: quantity_available + 1,
       };
 
-      user.bookBorrowed.map((t) => {
-        if (t.title === title && count > 0) {
-          t.count--;
-        } else {
-          const index = user.bookBorrowed.findIndex((b) => b.title === title);
-          user.bookBorrowed.splice(index, 1);
-          //   user.bookBorrowed.push({ title, count: 1 });
-        }
-      });
-      const updUser = await users.update(userId, user);
+      const userData = {
+        username : username || user.username,
+        bookBorrowed : bookBorrowed.filter(b=>b != title) || bookBorrowed
+      }
+      const updUser = await User.update(userId, userData);
       const updBook = await Book.update(bookId, bookData);
       res.writeHead(200, { "Content-Type": "application/json" });
       return res.end(JSON.stringify(updBook, updUser));
@@ -164,7 +182,10 @@ async function updateBook(req, res, bookId, userId) {
     if (!user) {
       res.writeHead(404, { "Content-Type": "application.json" });
       res.end(
-        JSON.stringify({ message: "User not found, create a new user first" })
+        JSON.stringify({
+          message:
+            "User Id not found, create a new user first or use existing user id",
+        })
       );
     } else if (!book) {
       res.writeHead(404, { "Content-Type": "application.json" });
@@ -181,7 +202,7 @@ async function updateBook(req, res, bookId, userId) {
         quantity_available: quantity_available || book.quantity_available,
       };
 
-      const updBook = Book.update(bookId, bookData);
+      const updBook = await Book.update(bookId, bookData);
       res.writeHead(200, { "Content-Type": "application/json" });
       return res.end(JSON.stringify(updBook));
     }
@@ -197,9 +218,13 @@ async function deleteBook(req, res, bookId, userId) {
     if (!user) {
       res.writeHead(404, { "Content-Type": "application.json" });
       res.end(
-        JSON.stringify({ message: "User not found, create a new user first" })
+        JSON.stringify({
+          message:
+            "User Id not found, create a new user first or use existing user id",
+        })
       );
-    } else if (!book) {
+    }
+    if (!book) {
       res.writeHead(404, { "Content-Type": "application.json" });
       res.end(JSON.stringify({ message: "book not found" }));
     } else {
@@ -218,4 +243,6 @@ module.exports = {
   updateBook,
   addBookToStore,
   deleteBook,
+  borrowBook,
+  returnBook,
 };

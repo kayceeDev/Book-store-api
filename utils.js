@@ -1,5 +1,7 @@
+
 const fs = require("fs");
-const books = require('./data/books.json')
+const { title } = require("process");
+const books = require("./data/books.json");
 
 function writeDataToFile(filename, content) {
   fs.writeFileSync(filename, JSON.stringify(content), "utf8", (err) => {
@@ -27,12 +29,17 @@ function getPostData(req) {
   });
 }
 
-function isAvailable(id){
-books.map(b=>b.id === id && b.qunatity_available > 0)
+function isAvailable(id) {
+  return books.some((b) => b.id === id && b.quantity_available > 0);
+}
+
+const isAdded = (title)=> {
+  return books.some(b => b.title.trim().replace(/\s\s+/g, ' ') === title.trim().replace(/\s\s+/g, ' '))
 }
 
 module.exports = {
   writeDataToFile,
   getPostData,
-  isAvailable
+  isAvailable,
+  isAdded,
 };
