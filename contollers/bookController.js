@@ -1,6 +1,6 @@
 const Book = require("../models/bookModels");
 const User = require("../models/userModels");
-let availableBooks = require("../data/books.json");
+let admin = require("../data/admin.json");
 
 const { getPostData, isAvailable, isAdded } = require("../utils");
 
@@ -31,45 +31,31 @@ async function getBook(req, res, id) {
 
 async function addBookToStore(req, res, userId) {
   try {
-    const user = await User.findUserById(userId);
-    if (!user) {
+    const adminId = admin[0].id;
+    // const user = await User.findUserById(userId);
+    if (userId !== adminId) {
       res.writeHead(404, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ message: "User not found, Create new user" }));
-    } else {
-      const body = await getPostData(req);
-      const { title, author, description, quantity_available } =
-        JSON.parse(body);
-      const titleExist = isAdded(title);
-      console.log(titleExist);
-      if (titleExist) {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ message: "Book already in store" }));
-      } else {
-        //  availableBooks.map((b) => {
-        //   if (b.title === title) {
-        //     const id = b.id;
-        //     const book = {
-        //       title: b.title,
-        //       author: b.author,
-        //       description: b.description,
-        //       quantity_available: b.quantity_available + quantity_available,
-        //     };
-        //     const updBook = Book.update(id, book);
-        //     res.writeHead(200, { "Content-Type": "application/json" });
-        //     return res.end(JSON.stringify(updBook));
-        //   }
-        // });
-        const book = {
-          title: title.trim().replace(/\s\s+/g, " "),
-          author: author.trim().replace(/\s\s+/g, " "),
-          description: description.trim().replace(/\s\s+/g, " "),
-          quantity_available,
-        };
-        const newBook = await Book.create(book);
-        res.writeHead(201, { "Content-Type": "application/json" });
-        return res.end(JSON.stringify(newBook));
-      }
+      return res.end(
+        JSON.stringify({ message: "Only admin allowed to add book to store" })
+      );
     }
+    const body = await getPostData(req);
+    const { title, author, description, quantity_available } = JSON.parse(body);
+    const titleExist = isAdded(title);
+    console.log(titleExist);
+    if (titleExist) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ message: "Book already in store" }));
+    }
+    const book = {
+      title: title.trim().replace(/\s\s+/g, " "),
+      author: author.trim().replace(/\s\s+/g, " "),
+      description: description.trim().replace(/\s\s+/g, " "),
+      quantity_available,
+    };
+    const newBook = await Book.create(book);
+    res.writeHead(201, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify(newBook));
   } catch (error) {
     console.log(error);
   }
@@ -83,20 +69,20 @@ async function borrowBook(req, res, bookId, userId) {
     const bookIsAvailable = isAvailable(bookId);
     if (!user) {
       res.writeHead(404, { "Content-Type": "application.json" });
-      res.end(
+      return res.end(
         JSON.stringify({ message: "User not found, create a new user first" })
       );
     }
     if (!book) {
       res.writeHead(404, { "Content-Type": "application.json" });
-      res.end(JSON.stringify({ message: "book not found" }));
+      return res.end(JSON.stringify({ message: "book not found" }));
     }
     if (!bookIsAvailable) {
       res.writeHead(404, { "Content-Type": "application.json" });
       res.end(JSON.stringify({ message: "book out of stock" }));
     } else {
       const { title, author, description, quantity_available } = book;
-      const { username, bookBorrowed } = user
+      const { username, bookBorrowed } = user;
 
       const bookData = {
         title: title || book.title,
@@ -105,28 +91,24 @@ async function borrowBook(req, res, bookId, userId) {
         quantity_available: quantity_available - 1,
       };
 
-      console.log(title);
-
-      if (bookBorrowed.includes(title)) {
+      if (bookBorrowed.find(b=>b.name === title)) {
         res.writeHead(404, { "Content-Type": "application.json" });
         res.end(
           JSON.stringify({
             message: `User ${userId} already borrowed this book`,
           })
         );
-      }else{
-
+      } else {
         userData = {
           username: username || user.username,
-          bookBorrowed: [...bookBorrowed, title],
+          bookBorrowed: [...bookBorrowed,{id: book.id, name: title}],
         };
 
         const updUser = await User.update(userId, userData);
         const updBook = await Book.update(bookId, bookData);
         res.writeHead(200, { "Content-Type": "application/json" });
-        return res.end(JSON.stringify(updUser,updBook));
+        return res.end(JSON.stringify(updUser, updBook));
       }
-
     }
   } catch (error) {
     console.log(error);
@@ -142,17 +124,17 @@ async function returnBook(req, res, bookId, userId) {
       res.end(
         JSON.stringify({ message: "User not found, create a new user first" })
       );
-    } 
+    }
     if (!book) {
       res.writeHead(404, { "Content-Type": "application.json" });
       res.end(JSON.stringify({ message: "book not found" }));
-    } 
-    if (!user.bookBorrowed.includes(book.title)) {
+    }
+    if (!user.bookBorrowed.find(b=>b.name === book.title)) {
       res.writeHead(404, { "Content-Type": "application.json" });
       res.end(JSON.stringify({ message: "You haven't borrowed this book" }));
     } else {
       const { title, author, description, quantity_available } = book;
-      const {username, bookBorrowed} = user
+      const { username, bookBorrowed } = user;
 
       const bookData = {
         title: title || book.title,
@@ -162,9 +144,9 @@ async function returnBook(req, res, bookId, userId) {
       };
 
       const userData = {
-        username : username || user.username,
-        bookBorrowed : bookBorrowed.filter(b=>b != title) || bookBorrowed
-      }
+        username: username || user.username,
+        bookBorrowed: bookBorrowed.filter((b) => b.name != title) || bookBorrowed,
+      };
       const updUser = await User.update(userId, userData);
       const updBook = await Book.update(bookId, bookData);
       res.writeHead(200, { "Content-Type": "application/json" });

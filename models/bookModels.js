@@ -22,7 +22,8 @@ function create(book) {
   return new Promise((resolve, reject) => {
     const newBook = { id: uuidV4(), ...book };
     availableBooks.push(newBook);
-    writeDataToFile("./data/books.json", availableBooks);
+    writeDataToFile("./data/books.json", availableBooks)
+    resolve(newBook);
   });
 }
 

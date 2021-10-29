@@ -1,4 +1,5 @@
 const User = require("../models/userModels");
+const admin = require('../data/admin.json')
 
 const { getPostData } = require("../utils");
 
@@ -50,7 +51,7 @@ async function updateUser(req, res, id) {
     const user = await User.findUserById(id);
     if (!user) {
       res.writeHead(404, { "Content-Type": "application.json" });
-      res.end(
+      return res.end(
         JSON.stringify({ message: "User not found, create a new user first" })
       );
     } else {
